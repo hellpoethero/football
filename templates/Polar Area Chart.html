@@ -163,7 +163,7 @@
         let player_id = url.searchParams.get("player_id");
         console.log(player_id);
         if (player_id) {
-            $.getJSON('http://localhost:5000/data?player_id='+player_id, function (data) {
+            $.getJSON('/data?player_id='+player_id, function (data) {
                 updateConfig(data);
                 window.myPolarArea = Chart.PolarArea(ctx, config);
             });
