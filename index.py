@@ -4,7 +4,7 @@ from flask import Flask, render_template, request, jsonify
 import json
 
 app = Flask(__name__)
-dt = pd.read_csv("big5.csv", index_col=0)
+dt = pd.read_csv("https://raw.githubusercontent.com/hellpoethero/football/main/big5.csv", index_col=0)
 
 
 @app.route('/')
