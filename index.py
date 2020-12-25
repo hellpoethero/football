@@ -7,7 +7,7 @@ app = Flask(__name__)
 dt = pd.read_csv("https://raw.githubusercontent.com/hellpoethero/football/main/big5.csv", index_col=0)
 
 
-@app.route('/players')
+@app.route('/')
 def index(name=None):
     return "OK"
 
