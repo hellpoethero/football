@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Polar Area Chart</title>
@@ -79,95 +80,114 @@
 <!--<button id="addData">Add Data</button>-->
 <!--<button id="removeData">Remove Data</button>-->
 <script>
-    var randomScalingFactor = function () {
-        return Math.round(Math.random() * 100);
-    };
 
     var chartColors = window.chartColors;
     var color = Chart.helpers.color;
     var config = {
-        data: {
-            datasets: [],
-            real_data: [],
-            labels: []
-        },
-        options: {
-            layout: {
-                padding: {
-                    left: 0,
-                    right: 0,
-                    top: 0,
-                    bottom: 20
-                }
+            data: {
+                datasets: [],
+                real_data: [],
+                labels: []
             },
-            responsive: true,
-            legend: {
-                position: 'right',
-                display: false
-            },
-            title: {
-                display: true,
-                text: 'Polar chart for player'
-            },
-            scale: {
-                ticks: {
-                    beginAtZero: true,
-                    showLabelBackdrop: false,
+            options: {
+                layout: {
+                    padding: {
+                        left: 0,
+                        right: 0,
+                        top: 0,
+                        bottom: 20
+                    }
+                },
+                responsive: true,
+                legend: {
+                    position: 'right',
                     display: false
                 },
-                reverse: false,
-                xAxes: [{
-                    gridLines: {
-                        display: true,
-                        color: "black"
-                    }
-                }],
-            },
-            animation: {
-                animateRotate: false,
-                animateScale: true,
-            },
-            pointLabels: {
-                display: false
-            },
-            tooltips: {
-                callbacks: {
-                    label: function (tooltipItem, data) {
-                        var label = data.labels[tooltipItem.index] || '';
-
-                        if (label) {
-                            label += ': ';
-                        }
-                        // label += Math.round(tooltipItem.yLabel * 100) / 100;
-                        label += data.real_data[0][tooltipItem.index]
-                        return label;
-                    }
-                }
-            },
-            plugins: {
-                datalabels: {
-                    formatter: function (value, context) {
-                        return context.chart.data.labels[context.dataIndex];
+                title: {
+                    display: true,
+                    fontSize: 16,
+                    text: 'Polar chart for player'
+                },
+                scale: {
+                    ticks: {
+                        beginAtZero: true,
+                        showLabelBackdrop: false,
+                        display: false,
+                        gridLines: true,
+                        max: 1,
+                        min: 0,
+                        stepSize: 0.2
                     },
-                    anchor: 'start',
-                    align: 'end',
-                    offset: 210 // Gets updated
-                }
-            },
+                    reverse: false
+                },
+                animation: {
+                    animateRotate: false,
+                    animateScale: true,
+                },
+                pointLabels: {
+                    display: false
+                },
+                tooltips: {
+                    callbacks: {
+                        label: function (tooltipItem, data) {
+                            let label = data.datasets[tooltipItem.datasetIndex].label || '';
+
+                            if (label) {
+                                label += ': ';
+                            }
+                            // label += Math.round(tooltipItem.yLabel * 100) / 100;
+                            label += data.real_data[tooltipItem.datasetIndex][tooltipItem.index]
+                            return label;
+                        }
+                    }
+                },
+                plugins: {
+                    datalabels: {
+                        formatter: function (value, context) {
+                            return context.chart.data.labels[context.dataIndex];
+                        },
+                        anchor: 'start',
+                        align: 'end',
+                        offset: 210 // Gets updated
+                    }
+                },
+            }
         }
-    };
+    ;
 
     window.onload = function () {
         var ctx = document.getElementById('chart-area');
         let url = new URL(window.location.href);
         let player_id = url.searchParams.get("player_id");
+        let compare_id = url.searchParams.get("compare_id");
         console.log(player_id);
         if (player_id) {
-            $.getJSON('/data?player_id='+player_id, function (data) {
-                updateConfig(data);
-                window.myPolarArea = Chart.PolarArea(ctx, config);
-            });
+            // https://footballpolararea.herokuapp.com/
+            if (compare_id) {
+                $.getJSON('/data?player_id=' + player_id + "," + compare_id, function (data) {
 
+                    updateConfig(data["compare"],data["max"],0);
+                    config.data.datasets[0].borderColor = [];
+                    config.data.labels.forEach(function (value, j) {
+                        config.data.datasets[0].borderColor.push("rgb(0, 0, 0)");
+                    });
+
+                    updateConfig(data["player"],data["max"],1);
+                    config.options.title.text = [
+                        data["player"]["player"] + " | " + data["compare"]["player"],
+                        "Club: " + data["player"]["squad"] + " - 90s: " + data["player"]["minutes_90s"] +
+                        " | Club: " + data["compare"]["squad"] + " - 90s: " + data["compare"]["minutes_90s"],
+                        ""];
+
+                    console.log(config.data);
+                    window.myPolarArea = Chart.PolarArea(ctx, config);
+                });
+            } else {
+                $.getJSON('/data?player_id=' + player_id, function (data) {
+                    updateConfig(data["player"],data["max"],1);
+                    window.myPolarArea = Chart.PolarArea(ctx, config);
+                });
+            }
         }
     };
 
@@ -202,15 +222,17 @@
     // });
 
     let attacking_stats = ['npxg_per90', 'npxg_per_shot'];
-    let creating_stats = ['npxg_xa_per90', 'sca_per90'];
-    let dribbling_stats = ['dribbles_completed', 'dribbles_completed_pct'];
-    let defending_stats = ['pressures', 'pressure_regain_pct'];
+    let creating_stats = ['progressive_passes_per90', 'sca_passes_live_per90','passes_into_penalty_area_per90'];
+    let dribbling_stats = ['dribbles_completed_per90', 'dribbles_completed_pct'];
+    let defending_stats = ['pressures_per90', 'pressure_regain_pct'];
+    config.data.labels = attacking_stats.concat(creating_stats, dribbling_stats, defending_stats);
 
-    let createDataForChart = function (temp_stats, color, temp_obj, temp_data) {
+    let createDataForChart = function (temp_stats, color, temp_obj, temp_data, max_data) {
         temp_stats.forEach(function (value, j) {
             // config.data.datasets
-            temp_obj.data.push(temp_data["player"][value] / temp_data["max"][value]);
+            temp_obj.data.push(temp_data[value] / max_data[value]);
             temp_obj.backgroundColor.push(color);
+            // temp_obj.borderColor.push("rgb(0, 0, 0)");
         });
         return temp_obj;
     };
@@ -218,28 +240,26 @@
         let temp_obj = [];
         temp_stats.forEach(function (value, j) {
             // config.data.datasets
-            temp_obj.push(temp_data["player"][value]);
+            temp_obj.push(temp_data[value]);
         });
         return temp_obj;
     };
-    let updateConfig = function (data) {
+    let updateConfig = function (player_value,max_value,alpha) {
+        config.options.title.text = [player_value["player"], "Club: " + player_value["squad"] + " | 90s: " + player_value["minutes_90s"], ""];
 
-        console.log(data);
-        config.options.title.text = data["player"]["player"];
-
-        config.data.labels = attacking_stats.concat(creating_stats, dribbling_stats, defending_stats);
         let data_obj = {
             data: [],
             backgroundColor: [],
-            label: data["player"]["player"] // for legend
+            borderColor: [],
+            label: player_value["player"] // for legend
         }
-        data_obj = createDataForChart(attacking_stats, color(chartColors.red).alpha(1).rgbString(), data_obj, data);
-        data_obj = createDataForChart(creating_stats, color(chartColors.blue).alpha(1).rgbString(), data_obj, data);
-        data_obj = createDataForChart(dribbling_stats, color(chartColors.green).alpha(1).rgbString(), data_obj, data);
-        data_obj = createDataForChart(defending_stats, color(chartColors.yellow).alpha(1).rgbString(), data_obj, data);
+        data_obj = createDataForChart(attacking_stats, color(chartColors.red).alpha(alpha).rgbString(), data_obj, player_value, max_value);
+        data_obj = createDataForChart(creating_stats, color(chartColors.blue).alpha(alpha).rgbString(), data_obj, player_value, max_value);
+        data_obj = createDataForChart(dribbling_stats, color(chartColors.green).alpha(alpha).rgbString(), data_obj, player_value, max_value);
+        data_obj = createDataForChart(defending_stats, color(chartColors.yellow).alpha(alpha).rgbString(), data_obj, player_value, max_value);
         console.log(data_obj);
-        config.data.datasets = [data_obj];
-        config.data.real_data = [createRealDataForChart(config.data.labels, data)];
+        config.data.datasets.push(data_obj);
+        config.data.real_data.push(createRealDataForChart(config.data.labels, player_value));
     };
 
 </script>
