@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Polar Area Chart</title>
+    <!--	<script src="./Polar Area Chart_files/Chart.min.js"></script>-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"
+            integrity="sha512-d9xgZrVZpmmQlfonhQUvTR7lMPtO7NkZMkA0ABN3PHCbKA5nqylQ/yWlFAyY6hYgdF1Qh6nYiuADWwKB4C2WSw=="
+            crossorigin="anonymous"></script>
+    <script src="../static/utils.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.js"
+            integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
+    <style>
+        canvas {
+            -moz-user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+    </style>
+    <style type="text/css">/* Chart.js */
+    @keyframes chartjs-render-animation {
+        from {
+            opacity: .99
+        }
+        to {
+            opacity: 1
+        }
+    }
+
+    .chartjs-render-monitor {
+        animation: chartjs-render-animation 1ms
+    }
+
+    .chartjs-size-monitor, .chartjs-size-monitor-expand, .chartjs-size-monitor-shrink {
+        position: absolute;
+        direction: ltr;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        overflow: hidden;
+        pointer-events: none;
+        visibility: hidden;
+        z-index: -1
+    }
+
+    .chartjs-size-monitor-expand > div {
+        position: absolute;
+        width: 1000000px;
+        height: 1000000px;
+        left: 0;
+        top: 0
+    }
+
+    .chartjs-size-monitor-shrink > div {
+        position: absolute;
+        width: 200%;
+        height: 200%;
+        left: 0;
+        top: 0
+    }</style>
+</head>
+
+<body>
+<div id="canvas-holder" style="width:50%">
+    <div class="chartjs-size-monitor">
+        <div class="chartjs-size-monitor-expand">
+            <div class=""></div>
+        </div>
+        <div class="chartjs-size-monitor-shrink">
+            <div class=""></div>
+        </div>
+    </div>
+    <canvas id="chart-area" style="display: block; width: 675px; height: 337px;" width="675" height="337"
+            class="chartjs-render-monitor"></canvas>
+</div>
+<!--<button id="randomizeData">Randomize Data</button>-->
+<!--<button id="addData">Add Data</button>-->
+<!--<button id="removeData">Remove Data</button>-->
+<script>
+    var randomScalingFactor = function () {
+        return Math.round(Math.random() * 100);
+    };
+
+    var chartColors = window.chartColors;
+    var color = Chart.helpers.color;
+    var config = {
+        data: {
+            datasets: [],
+            real_data: [],
+            labels: []
+        },
+        options: {
+            layout: {
+                padding: {
+                    left: 0,
+                    right: 0,
+                    top: 0,
+                    bottom: 20
+                }
+            },
+            responsive: true,
+            legend: {
+                position: 'right',
+                display: false
+            },
+            title: {
+                display: true,
+                text: 'Polar chart for player'
+            },
+            scale: {
+                ticks: {
+                    beginAtZero: true,
+                    showLabelBackdrop: false,
+                    display: false
+                },
+                reverse: false,
+                xAxes: [{
+                    gridLines: {
+                        display: true,
+                        color: "black"
+                    }
+                }],
+            },
+            animation: {
+                animateRotate: false,
+                animateScale: true,
+            },
+            pointLabels: {
+                display: false
+            },
+            tooltips: {
+                callbacks: {
+                    label: function (tooltipItem, data) {
+                        var label = data.labels[tooltipItem.index] || '';
+
+                        if (label) {
+                            label += ': ';
+                        }
+                        // label += Math.round(tooltipItem.yLabel * 100) / 100;
+                        label += data.real_data[0][tooltipItem.index]
+                        return label;
+                    }
+                }
+            },
+            plugins: {
+                datalabels: {
+                    formatter: function (value, context) {
+                        return context.chart.data.labels[context.dataIndex];
+                    },
+                    anchor: 'start',
+                    align: 'end',
+                    offset: 210 // Gets updated
+                }
+            },
+        }
+    };
+
+    window.onload = function () {
+        var ctx = document.getElementById('chart-area');
+        let url = new URL(window.location.href);
+        let player_id = url.searchParams.get("player_id");
+        console.log(player_id);
+        if (player_id) {
+            $.getJSON('http://localhost:5000/data?player_id='+player_id, function (data) {
+                updateConfig(data);
+                window.myPolarArea = Chart.PolarArea(ctx, config);
+            });
+
+        }
+    };
+
+    // document.getElementById('randomizeData').addEventListener('click', function () {
+    //     config.data.datasets.forEach(function (piece, i) {
+    //         piece.data.forEach(function (value, j) {
+    //             config.data.datasets[i].data[j] = randomScalingFactor();
+    //         });
+    //     });
+    //     window.myPolarArea.update();
+    // });
+
+    var colorNames = Object.keys(window.chartColors);
+    // document.getElementById('addData').addEventListener('click', function () {
+    //     if (config.data.datasets.length > 0) {
+    //         config.data.labels.push('data #' + config.data.labels.length);
+    //         config.data.datasets.forEach(function (dataset) {
+    //             var colorName = colorNames[config.data.labels.length % colorNames.length];
+    //             dataset.backgroundColor.push(window.chartColors[colorName]);
+    //             dataset.data.push(randomScalingFactor());
+    //         });
+    //         window.myPolarArea.update();
+    //     }
+    // });
+    // document.getElementById('removeData').addEventListener('click', function () {
+    //     config.data.labels.pop(); // remove the label first
+    //     config.data.datasets.forEach(function (dataset) {
+    //         dataset.backgroundColor.pop();
+    //         dataset.data.pop();
+    //     });
+    //     window.myPolarArea.update();
+    // });
+
+    let attacking_stats = ['npxg_per90', 'npxg_per_shot'];
+    let creating_stats = ['npxg_xa_per90', 'sca_per90'];
+    let dribbling_stats = ['dribbles_completed', 'dribbles_completed_pct'];
+    let defending_stats = ['pressures', 'pressure_regain_pct'];
+
+    let createDataForChart = function (temp_stats, color, temp_obj, temp_data) {
+        temp_stats.forEach(function (value, j) {
+            // config.data.datasets
+            temp_obj.data.push(temp_data["player"][value] / temp_data["max"][value]);
+            temp_obj.backgroundColor.push(color);
+        });
+        return temp_obj;
+    };
+    let createRealDataForChart = function (temp_stats, temp_data) {
+        let temp_obj = [];
+        temp_stats.forEach(function (value, j) {
+            // config.data.datasets
+            temp_obj.push(temp_data["player"][value]);
+        });
+        return temp_obj;
+    };
+    let updateConfig = function (data) {
+
+        console.log(data);
+        config.options.title.text = data["player"]["player"];
+
+        config.data.labels = attacking_stats.concat(creating_stats, dribbling_stats, defending_stats);
+        let data_obj = {
+            data: [],
+            backgroundColor: [],
+            label: data["player"]["player"] // for legend
+        }
+        data_obj = createDataForChart(attacking_stats, color(chartColors.red).alpha(1).rgbString(), data_obj, data);
+        data_obj = createDataForChart(creating_stats, color(chartColors.blue).alpha(1).rgbString(), data_obj, data);
+        data_obj = createDataForChart(dribbling_stats, color(chartColors.green).alpha(1).rgbString(), data_obj, data);
+        data_obj = createDataForChart(defending_stats, color(chartColors.yellow).alpha(1).rgbString(), data_obj, data);
+        console.log(data_obj);
+        config.data.datasets = [data_obj];
+        config.data.real_data = [createRealDataForChart(config.data.labels, data)];
+    };
+
+</script>
+
+
+</body>
+</html>
