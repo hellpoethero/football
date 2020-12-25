@@ -7,8 +7,13 @@ app = Flask(__name__)
 dt = pd.read_csv("https://raw.githubusercontent.com/hellpoethero/football/main/big5.csv", index_col=0)
 
 
-@app.route('/')
+@app.route('/players')
 def index(name=None):
+    return "OK"
+
+
+@app.route('/players')
+def players(name=None):
     dt_table = dt[dt.columns[0:5]].copy()
     dt_table['url'] = dt_table.index
     dt_table['url'] = dt_table['url'].apply(lambda x: '<a href="/chart?player_id={0}">View</a>'.format(str(x)))
