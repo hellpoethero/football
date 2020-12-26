@@ -8,9 +8,10 @@ app = Flask(__name__)
 CORS(app)
 dt = pd.read_csv("https://raw.githubusercontent.com/hellpoethero/football/main/big5.csv", index_col=0)
 
+
 @app.route('/')
-def index(name=None):
-    return "OK"
+def index():
+    return render_template('index.html')
 
 
 @app.route('/players')
@@ -19,7 +20,7 @@ def players(name=None):
     dt_table['url'] = dt_table.index
     dt_table['url'] = dt_table['url'].apply(lambda x: '<a href="/chart?player_id={0}">View</a>'.format(str(x)))
 
-    return render_template('index.html', name=name, tables=[dt_table.to_html(escape=False, classes="table")])
+    return render_template('players.html', tables=[dt_table.to_html(escape=False, classes="table")])
 
 
 @app.route('/chart')
