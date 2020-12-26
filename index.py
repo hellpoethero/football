@@ -8,9 +8,13 @@ app = Flask(__name__)
 CORS(app)
 dt = pd.read_csv("https://raw.githubusercontent.com/hellpoethero/football/main/big5.csv", index_col=0)
 
-
 @app.route('/')
 def index(name=None):
+    return "OK"
+
+
+@app.route('/players')
+def players(name=None):
     dt_table = dt[dt.columns[0:9]].copy()
     dt_table['url'] = dt_table.index
     dt_table['url'] = dt_table['url'].apply(lambda x: '<a href="/chart?player_id={0}">View</a>'.format(str(x)))
@@ -19,7 +23,7 @@ def index(name=None):
 
 
 @app.route('/chart')
-def hello(name=None):
+def chart(name=None):
     return render_template('Polar Area Chart.html', name=name)
 
 
