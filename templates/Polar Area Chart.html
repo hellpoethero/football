@@ -61,21 +61,54 @@
         left: 0;
         top: 0
     }</style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+
 </head>
 
 <body>
-<div id="canvas-holder" style="width:50%">
-    <div class="chartjs-size-monitor">
-        <div class="chartjs-size-monitor-expand">
-            <div class=""></div>
+<div>
+    <div class="row mt-3">
+        <div class="offset-lg-1 col-lg-4">
+            <form class="row g-3">
+                <div class="col-auto">
+                    <label for="compare_name" class="visually-hidden">Player Name</label>
+                    <input type="text" class="form-control" id="compare_name" placeholder="Player name">
+                </div>
+                <div class="col-auto">
+                    <button type="button" class="btn btn-primary mb-3" onclick="searchPlayer()">Search player</button>
+                </div>
+            </form>
+            <table class="table" style="width: 100%">
+                <thead>
+                <tr>
+                    <th scope="col" style="width: 10%">Player_id</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Squad</th>
+                    <th scope="col" style="width: 5%"></th>
+                    <th scope="col" style="width: 5%"></th>
+                </tr>
+                </thead>
+                <tbody id="player_table">
+                </tbody>
+            </table>
         </div>
-        <div class="chartjs-size-monitor-shrink">
-            <div class=""></div>
+        <div id="canvas-holder" class="col-lg-6">
+            <div class="chartjs-size-monitor">
+                <div class="chartjs-size-monitor-expand">
+                    <div class=""></div>
+                </div>
+                <div class="chartjs-size-monitor-shrink">
+                    <div class=""></div>
+                </div>
+            </div>
+            <canvas id="chart-area" style="display: block; width: 675px; height: 400px;" width="675" height="400"
+                    class="chartjs-render-monitor"></canvas>
         </div>
     </div>
-    <canvas id="chart-area" style="display: block; width: 675px; height: 337px;" width="675" height="337"
-            class="chartjs-render-monitor"></canvas>
+
 </div>
+
 <!--<button id="randomizeData">Randomize Data</button>-->
 <!--<button id="addData">Add Data</button>-->
 <!--<button id="removeData">Remove Data</button>-->
@@ -136,7 +169,7 @@
                                 label += ': ';
                             }
                             // label += Math.round(tooltipItem.yLabel * 100) / 100;
-                            label += data.real_data[tooltipItem.datasetIndex][tooltipItem.index]
+                            label += Math.round(data.real_data[tooltipItem.datasetIndex][tooltipItem.index] * 100) / 100
                             return label;
                         }
                     }
@@ -148,7 +181,7 @@
                         },
                         anchor: 'start',
                         align: 'end',
-                        offset: 190 // Gets updated
+                        offset: 245 // Gets updated
                     }
                 },
             }
@@ -160,23 +193,23 @@
         let url = new URL(window.location.href);
         let player_id = url.searchParams.get("player_id");
         let compare_id = url.searchParams.get("compare_id");
-        console.log(player_id);
+        // console.log(player_id);
         if (player_id) {
             // https://footballpolararea.herokuapp.com/
             if (compare_id) {
                 $.getJSON('/data?player_id=' + player_id + "," + compare_id, function (data) {
 
-                    updateConfig(data["compare"],data["max"],0);
+                    updateConfig(data["compare"], data["max"], 0);
                     config.data.datasets[0].borderColor = [];
                     config.data.labels.forEach(function (value, j) {
                         config.data.datasets[0].borderColor.push("rgb(0, 0, 0)");
                     });
 
-                    updateConfig(data["player"],data["max"],1);
+                    updateConfig(data["player"], data["max"], 1);
                     config.options.title.text = [
                         data["player"]["player"] + " | " + data["compare"]["player"],
-                        "Club: " + data["player"]["squad"] + " - 90s: " + data["player"]["minutes_90s"] +
-                        " | Club: " + data["compare"]["squad"] + " - 90s: " + data["compare"]["minutes_90s"],
+                        "Club: " + data["player"]["squad"] + " - Minutes: " + data["player"]["minutes"] +
+                        " | Club: " + data["compare"]["squad"] + " - Minutes: " + data["compare"]["minutes"],
                         ""];
 
                     console.log(config.data);
@@ -184,7 +217,7 @@
                 });
             } else {
                 $.getJSON('/data?player_id=' + player_id, function (data) {
-                    updateConfig(data["player"],data["max"],1);
+                    updateConfig(data["player"], data["max"], 1);
                     window.myPolarArea = Chart.PolarArea(ctx, config);
                 });
             }
@@ -222,8 +255,8 @@
     // });
 
     let attacking_stats = ['npxg_per90', 'npxg_per_shot'];
-    let creating_stats = ['progressive_passes_per90', 'sca_passes_live_per90','passes_into_penalty_area_per90'];
-    let dribbling_stats = ['dribbles_completed_per90', 'dribbles_completed_pct','carry_progressive_distance_per90'];
+    let creating_stats = ['progressive_passes_per90', 'sca_passes_live_per90', 'passes_into_penalty_area_per90'];
+    let dribbling_stats = ['dribbles_completed_per90', 'dribbles_completed_pct', 'carry_progressive_distance_per90'];
     let defending_stats = ['pressures_per90', 'pressure_regain_pct'];
     config.data.labels = attacking_stats.concat(creating_stats, dribbling_stats, defending_stats);
 
@@ -244,8 +277,8 @@
         });
         return temp_obj;
     };
-    let updateConfig = function (player_value,max_value,alpha) {
-        config.options.title.text = [player_value["player"], "Club: " + player_value["squad"] + " | 90s: " + player_value["minutes_90s"], ""];
+    let updateConfig = function (player_value, max_value, alpha) {
+        config.options.title.text = [player_value["player"], "Club: " + player_value["squad"] + " | Minutes: " + player_value["minutes"], ""];
 
         let data_obj = {
             data: [],
@@ -260,6 +293,37 @@
         // console.log(data_obj);
         config.data.datasets.push(data_obj);
         config.data.real_data.push(createRealDataForChart(config.data.labels, player_value));
+    };
+
+    let searchPlayer = function () {
+        let player_name = document.getElementById('compare_name').value;
+        console.log(player_name);
+        if (player_name) {
+            $.getJSON('/search?name=' + player_name, function (data) {
+                console.log(data);
+                $('#player_table').empty();
+                data.forEach(function (value, j) {
+                    $('#player_table').append(
+                        '<tr><th>' + value["index"] + '</th>' +
+                        '<td>' + value["player"] + '</td>' +
+                        '<td>' + value["squad"] + '</td>' +
+                        '<td><button type="button" class="btn btn-success btn-sm" onclick="view(' + value["index"] + ')">View</button></td>' +
+                        '<td><button type="button" class="btn btn-primary btn-sm" onclick="compare(' + value["index"] + ')">Compare</button></td></tr>');
+                });
+            });
+        }
+    };
+
+    let compare = function (compare_id) {
+        let url = new URL(window.location.href);
+        url.searchParams.set("compare_id", compare_id);
+        window.location.replace(url);
+    };
+
+    let view = function (player_id) {
+        let url = "/chart?player_id=" + player_id;
+        console.log(url);
+        window.location.replace(url);
     };
 
 </script>

@@ -11,11 +11,6 @@ dt = pd.read_csv("https://raw.githubusercontent.com/hellpoethero/football/main/b
 
 @app.route('/')
 def index(name=None):
-    return "OK"
-
-
-@app.route('/players')
-def players(name=None):
     dt_table = dt[dt.columns[0:9]].copy()
     dt_table['url'] = dt_table.index
     dt_table['url'] = dt_table['url'].apply(lambda x: '<a href="/chart?player_id={0}">View</a>'.format(str(x)))
@@ -51,7 +46,9 @@ def get_data():
 def search():
     player_name = request.args.get('name')
     if player_name:
-        dt[dt["player"].str.contains(player_name)][dt.columns[0:5]].to_json(orient='records')
-        return "OK"
+        dt['index'] = dt.index
+        cols = ['index','player','nationality','position','squad','age']
+        response = dt[dt["player"].str.lower().str.contains(player_name)][cols].to_json(orient='records')
+        return response
     else:
         return "Fail"
