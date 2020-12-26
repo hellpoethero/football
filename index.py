@@ -16,7 +16,7 @@ def index(name=None):
 
 @app.route('/players')
 def players(name=None):
-    dt_table = dt[dt.columns[0:5]].copy()
+    dt_table = dt[dt.columns[0:9]].copy()
     dt_table['url'] = dt_table.index
     dt_table['url'] = dt_table['url'].apply(lambda x: '<a href="/chart?player_id={0}">View</a>'.format(str(x)))
 

@@ -148,7 +148,7 @@
                         },
                         anchor: 'start',
                         align: 'end',
-                        offset: 210 // Gets updated
+                        offset: 190 // Gets updated
                     }
                 },
             }
@@ -223,7 +223,7 @@
 
     let attacking_stats = ['npxg_per90', 'npxg_per_shot'];
     let creating_stats = ['progressive_passes_per90', 'sca_passes_live_per90','passes_into_penalty_area_per90'];
-    let dribbling_stats = ['dribbles_completed_per90', 'dribbles_completed_pct'];
+    let dribbling_stats = ['dribbles_completed_per90', 'dribbles_completed_pct','carry_progressive_distance_per90'];
     let defending_stats = ['pressures_per90', 'pressure_regain_pct'];
     config.data.labels = attacking_stats.concat(creating_stats, dribbling_stats, defending_stats);
 
@@ -257,7 +257,7 @@
         data_obj = createDataForChart(creating_stats, color(chartColors.blue).alpha(alpha).rgbString(), data_obj, player_value, max_value);
         data_obj = createDataForChart(dribbling_stats, color(chartColors.green).alpha(alpha).rgbString(), data_obj, player_value, max_value);
         data_obj = createDataForChart(defending_stats, color(chartColors.yellow).alpha(alpha).rgbString(), data_obj, player_value, max_value);
-        console.log(data_obj);
+        // console.log(data_obj);
         config.data.datasets.push(data_obj);
         config.data.real_data.push(createRealDataForChart(config.data.labels, player_value));
     };
