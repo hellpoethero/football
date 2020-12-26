@@ -79,7 +79,7 @@
                     <button type="button" class="btn btn-primary mb-3" onclick="searchPlayer()">Search player</button>
                 </div>
             </div>
-            <table class="table" style="width: 100%">
+            <table id="search_table" class="table" style="display: none">
                 <thead>
                 <tr>
                     <th scope="col" style="width: 10%">Player_id</th>
@@ -131,6 +131,10 @@
 <!--<button id="addData">Add Data</button>-->
 <!--<button id="removeData">Remove Data</button>-->
 <script>
+    let editLabel = function (label) {
+        let new_label = label.replace("_per90", "").replace("pct", "%").replaceAll("_", " ");
+        return new_label;
+    }
 
     var chartColors = window.chartColors;
     var color = Chart.helpers.color;
@@ -138,7 +142,8 @@
             data: {
                 datasets: [],
                 real_data: [],
-                labels: []
+                labels: [],
+                real_labels: []
             },
             options: {
                 layout: {
@@ -156,7 +161,7 @@
                 },
                 title: {
                     display: true,
-                    fontSize: 16,
+                    fontSize: 20,
                     text: 'Polar chart for player'
                 },
                 scale: {
@@ -199,7 +204,7 @@
                         },
                         anchor: 'start',
                         align: 'end',
-                        offset: 245 // Gets updated
+                        offset: 235 // Gets updated
                     }
                 },
             }
@@ -219,7 +224,7 @@
 
                     updateConfig(data["compare"], data["max"], 0);
                     config.data.datasets[0].borderColor = [];
-                    config.data.labels.forEach(function (value, j) {
+                    config.data.real_labels.forEach(function (value, j) {
                         config.data.datasets[0].borderColor.push("rgb(0, 0, 0)");
                     });
 
@@ -233,7 +238,8 @@
                     $('#player1').text(data["player"]["player"]);
                     $('#player2').text(data["compare"]["player"]);
 
-                    createStatTable(config.data.labels, data["player"], data["compare"]);
+                    let stats_in_table = ["minutes"];
+                    createStatTable(stats_in_table.concat(config.data.real_labels), data["player"], data["compare"]);
 
                     console.log(config.data);
                     window.myPolarArea = Chart.PolarArea(ctx, config);
@@ -242,7 +248,8 @@
                 $.getJSON('/data?player_id=' + player_id, function (data) {
                     updateConfig(data["player"], data["max"], 1);
                     $('#player1').text(data["player"]["player"]);
-                    createStatTable(config.data.labels, data["player"], null);
+                    let stats_in_table = ["minutes"];
+                    createStatTable(stats_in_table.concat(config.data.real_labels), data["player"], null);
                     window.myPolarArea = Chart.PolarArea(ctx, config);
                 });
             }
@@ -255,27 +262,48 @@
     let creating_stats = ['progressive_passes_per90', 'sca_passes_live_per90', 'passes_into_penalty_area_per90'];
     let dribbling_stats = ['dribbles_completed_per90', 'dribbles_completed_pct', 'carry_progressive_distance_per90'];
     let defending_stats = ['pressures_per90', 'pressure_regain_pct'];
-    config.data.labels = attacking_stats.concat(creating_stats, dribbling_stats, defending_stats);
+    config.data.real_labels = attacking_stats.concat(creating_stats, dribbling_stats, defending_stats);
+    config.data.real_labels.forEach(function (value) {
+        config.data.labels.push(editLabel(value));
+    });
 
     let createStatTable = function (stats, player1, player2) {
+        if (player2) {
+            $('#table_stat').append(
+                '<tr><th>Club</th>' +
+                '<td style="font-weight: bold; color: #ae0a25">' + player1["squad"] + '</td>' +
+                '<td style="font-weight: bold; color: #0ba921">' + player2["squad"] + '</td>');
+        } else {
+            $('#table_stat').append(
+                '<tr><th>Club</th>' +
+                '<td>' + player1["squad"] + '</td>' +
+                '<td></td>');
+        }
         stats.forEach(function (value, j) {
-            let value_name = value.replace("_per90","").replaceAll("_"," ");
+            let value_name = editLabel(value);
+            let value1 = Math.round(player1[value] * 100) / 100;
             if (player2) {
-                if (player1[value] > player2[value]) {
+                let value2 = Math.round(player2[value] * 100) / 100;
+                if (value1 > value2) {
                     $('#table_stat').append(
                         '<tr><th>' + value_name + '</th>' +
-                        '<td style="font-weight: bold; color: #ae0a25">' + Math.round(player1[value] * 100) / 100 + '</td>' +
-                        '<td>' + Math.round(player2[value] * 100) / 100 + '</td>');
+                        '<td style="font-weight: bold; color: #ae0a25">' + value1 + '</td>' +
+                        '<td>' + value2 + '</td>');
+                } else if (value1 < value2) {
+                    $('#table_stat').append(
+                        '<tr><th>' + value_name + '</th>' +
+                        '<td>' + value1 + '</td>' +
+                        '<td style="font-weight: bold; color: #0ba921">' + value2 + '</td>');
                 } else {
                     $('#table_stat').append(
                         '<tr><th>' + value_name + '</th>' +
-                        '<td>' + Math.round(player1[value] * 100) / 100 + '</td>' +
-                        '<td style="font-weight: bold; color: #0ba921">' + Math.round(player2[value] * 100) / 100 + '</td>');
+                        '<td style="font-weight: bold; color: #ae0a25">' + value1 + '</td>' +
+                        '<td style="font-weight: bold; color: #0ba921">' + value2 + '</td>');
                 }
             } else {
                 $('#table_stat').append(
                     '<tr><th>' + value_name + '</th>' +
-                    '<td>' + Math.round(player1[value] * 100) / 100 + '</td>' +
+                    '<td>' + value1 + '</td>' +
                     '<td></td>');
             }
         });
@@ -314,7 +342,7 @@
         data_obj = createDataForChart(defending_stats, color(chartColors.yellow).alpha(alpha).rgbString(), data_obj, player_value, max_value);
         // console.log(data_obj);
         config.data.datasets.push(data_obj);
-        config.data.real_data.push(createRealDataForChart(config.data.labels, player_value));
+        config.data.real_data.push(createRealDataForChart(config.data.real_labels, player_value));
     };
 
     let searchPlayer = function () {
@@ -323,6 +351,7 @@
         if (player_name) {
             $.getJSON('/search?name=' + player_name, function (data) {
                 console.log(data);
+                $('#search_table').show();
                 $('#player_table').empty();
                 data.forEach(function (value, j) {
                     $('#player_table').append(
