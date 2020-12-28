@@ -60,7 +60,18 @@
         height: 200%;
         left: 0;
         top: 0
-    }</style>
+    }
+
+    .player1 {
+        font-weight: bold;
+        color: #0ba921;
+    }
+
+    .player2 {
+        font-weight: bold;
+        color: #AE0A25;
+    }
+    </style>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
           integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
 
@@ -93,12 +104,20 @@
                 </tbody>
             </table>
         </div>
-        <div>
-
-        </div>
     </div>
     <div class="row mt-3">
         <div id="canvas-holder" class="offset-lg-1 col-lg-6">
+            <div style="text-align: right;">
+                    <span class="mr-5">Select type of chart</span>
+                <span class="btn-group btn-group-toggle" data-toggle="buttons">
+                    <label class="btn btn-sm btn-primary" id="raw_value" onclick="changeGraph('raw_value')">
+                        Raw value
+                    </label>
+                    <label class="btn btn-sm btn-outline-primary" id="percentile" onclick="changeGraph('percentile')">
+                        Percentile
+                    </label>
+                </span>
+            </div>
             <div class="chartjs-size-monitor">
                 <div class="chartjs-size-monitor-expand">
                     <div class=""></div>
@@ -186,14 +205,11 @@
                 tooltips: {
                     callbacks: {
                         label: function (tooltipItem, data) {
-                            let label = data.datasets[tooltipItem.datasetIndex].label || '';
-
-                            if (label) {
-                                label += ': ';
-                            }
-                            // label += Math.round(tooltipItem.yLabel * 100) / 100;
-                            label += Math.round(data.real_data[tooltipItem.datasetIndex][tooltipItem.index] * 100) / 100
-                            return label;
+                            let labels = [];
+                            labels.push(" " + data.datasets[tooltipItem.datasetIndex].label || '');
+                            labels.push(' Value: ' + Math.round(data.real_data[tooltipItem.datasetIndex][tooltipItem.index] * 100) / 100);
+                            labels.push(' Percentile: ' + data.datasets[tooltipItem.datasetIndex].percentile[tooltipItem.index]*100);
+                            return labels;
                         }
                     }
                 },
@@ -216,11 +232,16 @@
         let url = new URL(window.location.href);
         let player_id = url.searchParams.get("player_id");
         let compare_id = url.searchParams.get("compare_id");
+        let position = url.searchParams.get("position");
         // console.log(player_id);
+        let pos_query = ''
+        if (position) {
+            pos_query = '&position='+position
+        }
         if (player_id) {
             // https://footballpolararea.herokuapp.com/
             if (compare_id) {
-                $.getJSON('/data?player_id=' + player_id + "," + compare_id, function (data) {
+                $.getJSON('/data?player_id=' + player_id + "," + compare_id+pos_query, function (data) {
 
                     updateConfig(data["compare"], data["max"], 0);
                     config.data.datasets[0].borderColor = [];
@@ -245,9 +266,10 @@
                     window.myPolarArea = Chart.PolarArea(ctx, config);
                 });
             } else {
-                $.getJSON('/data?player_id=' + player_id, function (data) {
+                $.getJSON('/data?player_id=' + player_id+pos_query, function (data) {
                     updateConfig(data["player"], data["max"], 1);
                     $('#player1').text(data["player"]["player"]);
+                    $('#player2').text("Ranking");
                     let stats_in_table = ["minutes"];
                     createStatTable(stats_in_table.concat(config.data.real_labels), data["player"], null);
                     window.myPolarArea = Chart.PolarArea(ctx, config);
@@ -255,6 +277,24 @@
             }
         }
     };
+
+    let changeGraph = function (graph_type) {
+        if (graph_type === "raw_value") {
+            config.data.datasets.forEach(function (value) {
+                value.data = value.raw_value;
+            });
+            $('#percentile').removeClass("btn-primary").addClass("btn-outline-primary")
+            $('#raw_value').removeClass("btn-outline-primary").addClass("btn-primary")
+            window.myPolarArea.update();
+        } else {
+            config.data.datasets.forEach(function (value) {
+                value.data = value.percentile;
+            });
+            $('#raw_value').removeClass("btn-primary").addClass("btn-outline-primary")
+            $('#percentile').removeClass("btn-outline-primary").addClass("btn-primary")
+            window.myPolarArea.update();
+        }
+    }
 
     var colorNames = Object.keys(window.chartColors);
 
@@ -271,12 +311,12 @@
         if (player2) {
             $('#table_stat').append(
                 '<tr><th>Club</th>' +
-                '<td style="font-weight: bold; color: #ae0a25">' + player1["squad"] + '</td>' +
-                '<td style="font-weight: bold; color: #0ba921">' + player2["squad"] + '</td>');
+                '<td class="player1">' + player1["squad"] + '</td>' +
+                '<td class="player2">' + player2["squad"] + '</td>');
         } else {
             $('#table_stat').append(
                 '<tr><th>Club</th>' +
-                '<td>' + player1["squad"] + '</td>' +
+                '<td class="player1">' + player1["squad"] + '</td>' +
                 '<td></td>');
         }
         stats.forEach(function (value, j) {
@@ -287,24 +327,25 @@
                 if (value1 > value2) {
                     $('#table_stat').append(
                         '<tr><th>' + value_name + '</th>' +
-                        '<td style="font-weight: bold; color: #ae0a25">' + value1 + '</td>' +
+                        '<td class="player1">' + value1 + '</td>' +
                         '<td>' + value2 + '</td>');
                 } else if (value1 < value2) {
                     $('#table_stat').append(
                         '<tr><th>' + value_name + '</th>' +
                         '<td>' + value1 + '</td>' +
-                        '<td style="font-weight: bold; color: #0ba921">' + value2 + '</td>');
+                        '<td class="player2">' + value2 + '</td>');
                 } else {
                     $('#table_stat').append(
                         '<tr><th>' + value_name + '</th>' +
-                        '<td style="font-weight: bold; color: #ae0a25">' + value1 + '</td>' +
-                        '<td style="font-weight: bold; color: #0ba921">' + value2 + '</td>');
+                        '<td class="player1">' + value1 + '</td>' +
+                        '<td class="player2">' + value2 + '</td>');
                 }
             } else {
+                let td_class = player1[value + "_rank"] >= 90 ? ' class="player1"' : '';
                 $('#table_stat').append(
                     '<tr><th>' + value_name + '</th>' +
-                    '<td>' + value1 + '</td>' +
-                    '<td></td>');
+                    '<td' + td_class + '>' + value1 + '</td>' +
+                    '<td' + td_class + '>' + player1[value + "_rank"] + '</td>');
             }
         });
     };
@@ -312,10 +353,11 @@
     let createDataForChart = function (temp_stats, color, temp_obj, temp_data, max_data) {
         temp_stats.forEach(function (value, j) {
             // config.data.datasets
-            temp_obj.data.push(temp_data[value] / max_data[value]);
+            temp_obj.raw_value.push(temp_data[value] / max_data[value]);
+            temp_obj.percentile.push(temp_data[value + "_rank"] / 100);
+            temp_obj.data = temp_obj.raw_value;
             temp_obj.backgroundColor.push(color);
             // temp_obj.borderColor.push("rgb(0, 0, 0)");
-
         });
         return temp_obj;
     };
@@ -332,6 +374,8 @@
 
         let data_obj = {
             data: [],
+            raw_value: [],
+            percentile: [],
             backgroundColor: [],
             borderColor: [],
             label: player_value["player"] // for legend
@@ -340,7 +384,7 @@
         data_obj = createDataForChart(creating_stats, color(chartColors.blue).alpha(alpha).rgbString(), data_obj, player_value, max_value);
         data_obj = createDataForChart(dribbling_stats, color(chartColors.green).alpha(alpha).rgbString(), data_obj, player_value, max_value);
         data_obj = createDataForChart(defending_stats, color(chartColors.yellow).alpha(alpha).rgbString(), data_obj, player_value, max_value);
-        // console.log(data_obj);
+        console.log(data_obj);
         config.data.datasets.push(data_obj);
         config.data.real_data.push(createRealDataForChart(config.data.real_labels, player_value));
     };
